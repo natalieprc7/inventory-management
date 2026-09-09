@@ -2,6 +2,7 @@
   <div class="language-switcher">
     <button
       class="language-button"
+      :class="{ 'is-collapsed': collapsed }"
       @click="toggleDropdown"
       @blur="handleBlur"
     >
@@ -17,8 +18,9 @@
         <path d="M10 3C10 3 7.5 5.5 7.5 10C7.5 14.5 10 17 10 17" stroke="currentColor" stroke-width="1.5"/>
         <path d="M10 3C10 3 12.5 5.5 12.5 10C12.5 14.5 10 17 10 17" stroke="currentColor" stroke-width="1.5"/>
       </svg>
-      <span class="language-label">{{ localeName }}</span>
+      <span v-if="!collapsed" class="language-label">{{ localeName }}</span>
       <svg
+        v-if="!collapsed"
         class="chevron"
         :class="{ 'chevron-open': isDropdownOpen }"
         width="16"
@@ -30,7 +32,7 @@
       </svg>
     </button>
 
-    <div v-if="isDropdownOpen" class="dropdown-menu">
+    <div v-if="isDropdownOpen" class="dropdown-menu" :class="{ 'is-collapsed': collapsed }">
       <button
         v-for="locale in availableLocales"
         :key="locale"
@@ -57,6 +59,13 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from '../composables/useI18n'
+
+defineProps({
+  collapsed: {
+    type: Boolean,
+    default: false
+  }
+})
 
 const { currentLocale, setLocale, availableLocales, localeName } = useI18n()
 
@@ -94,8 +103,10 @@ const selectLanguage = (locale) => {
 }
 
 .language-button {
+  width: 100%;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   padding: 0.5rem 0.875rem;
   background: white;
@@ -113,6 +124,11 @@ const selectLanguage = (locale) => {
   border-color: #cbd5e1;
 }
 
+.language-button.is-collapsed {
+  justify-content: center;
+  padding: 0.5rem;
+}
+
 .globe-icon {
   color: #64748b;
   flex-shrink: 0;
@@ -120,6 +136,8 @@ const selectLanguage = (locale) => {
 
 .language-label {
   font-weight: 500;
+  flex: 1;
+  text-align: left;
 }
 
 .chevron {
@@ -134,15 +152,22 @@ const selectLanguage = (locale) => {
 
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  bottom: calc(100% + 0.5rem);
+  left: 0;
   right: 0;
-  min-width: 160px;
+  width: 100%;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   overflow: hidden;
+}
+
+.dropdown-menu.is-collapsed {
+  width: 200px;
+  left: 0;
+  right: auto;
 }
 
 .dropdown-item {

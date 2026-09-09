@@ -6,6 +6,7 @@ export default {
     orders: '注文',
     finance: '財務',
     demandForecast: '需要予測',
+    restocking: '補充',
     companyName: '触媒コンポーネンツ',
     subtitle: '在庫管理システム'
   },
@@ -106,6 +107,7 @@ export default {
     title: '注文',
     description: '顧客注文の表示と管理',
     allOrders: 'すべての注文',
+    submittedOrders: '発注済み注文',
     totalOrders: '総注文数',
     totalRevenue: '総収益',
     avgOrderValue: '平均注文額',
@@ -125,7 +127,8 @@ export default {
       totalValue: '合計金額',
       status: 'ステータス',
       expectedDelivery: '予定配達日',
-      actualDelivery: '実際の配達日'
+      actualDelivery: '実際の配達日',
+      leadTime: '納品リードタイム'
     }
   },
 
@@ -186,6 +189,31 @@ export default {
       trend: 'トレンド',
       period: '期間'
     }
+  },
+
+  // Restocking
+  restocking: {
+    title: '補充',
+    description: '予算を設定し、需要予測に基づいた補充推奨品目を確認します',
+    budgetLabel: '利用可能な予算',
+    recommendationsTitle: '推奨品目',
+    noRecommendations: 'この予算では推奨できる品目がありません。予算を増やしてみてください。',
+    table: {
+      include: '含める',
+      sku: 'SKU',
+      itemName: '品目名',
+      category: 'カテゴリ',
+      warehouse: '倉庫',
+      trend: 'トレンド',
+      unitCost: '単価',
+      quantity: '数量',
+      lineCost: '小計'
+    },
+    totalLabel: '選択済み合計',
+    overBudget: '選択済み合計が予算を超えています',
+    placeOrder: '注文する',
+    orderSuccess: '注文{orderNumber}が正常に作成されました。注文タブで確認してください。',
+    orderError: '補充注文の作成に失敗しました'
   },
 
   // Filters
@@ -323,7 +351,8 @@ export default {
     search: '検索',
     filter: 'フィルター',
     export: 'エクスポート',
-    items: '件'
+    items: '件',
+    days: '日'
   },
 
   // Product Names
