@@ -2,14 +2,16 @@
   <div class="profile-menu">
     <button
       class="profile-button"
+      :class="{ 'is-collapsed': collapsed }"
       @click="toggleDropdown"
       @blur="handleBlur"
     >
       <div class="avatar">
         {{ getInitials(currentUser.name) }}
       </div>
-      <span class="profile-name">{{ currentUser.name }}</span>
+      <span v-if="!collapsed" class="profile-name">{{ currentUser.name }}</span>
       <svg
+        v-if="!collapsed"
         class="chevron"
         :class="{ 'chevron-open': isDropdownOpen }"
         width="16"
@@ -21,7 +23,7 @@
       </svg>
     </button>
 
-    <div v-if="isDropdownOpen" class="dropdown-menu">
+    <div v-if="isDropdownOpen" class="dropdown-menu" :class="{ 'is-collapsed': collapsed }">
       <div class="dropdown-header">
         <div class="avatar-large">
           {{ getInitials(currentUser.name) }}
@@ -78,6 +80,13 @@ import { ref, computed } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { useI18n } from '../composables/useI18n'
 
+defineProps({
+  collapsed: {
+    type: Boolean,
+    default: false
+  }
+})
+
 const { currentUser, logout, getInitials } = useAuth()
 const { t } = useI18n()
 
@@ -121,8 +130,10 @@ const handleLogout = () => {
 }
 
 .profile-button {
+  width: 100%;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.625rem;
   padding: 0.5rem 0.875rem;
   background: white;
@@ -136,6 +147,11 @@ const handleLogout = () => {
 .profile-button:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
+}
+
+.profile-button.is-collapsed {
+  justify-content: center;
+  padding: 0.5rem;
 }
 
 .avatar {
@@ -161,6 +177,7 @@ const handleLogout = () => {
 .chevron {
   color: #64748b;
   transition: transform 0.2s ease;
+  margin-left: auto;
 }
 
 .chevron-open {
@@ -169,15 +186,22 @@ const handleLogout = () => {
 
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  bottom: calc(100% + 0.5rem);
+  left: 0;
   right: 0;
-  min-width: 280px;
+  width: 100%;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   overflow: hidden;
+}
+
+.dropdown-menu.is-collapsed {
+  width: 260px;
+  left: 0;
+  right: auto;
 }
 
 .dropdown-header {

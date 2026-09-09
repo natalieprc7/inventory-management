@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from pydantic import BaseModel
+from datetime import datetime, timedelta
 from mock_data import inventory_items, orders, demand_forecasts, backlog_items, spending_summary, monthly_spending, category_spending, recent_transactions, purchase_orders
 
 app = FastAPI(title="Factory Inventory Management System")
@@ -67,6 +68,7 @@ class InventoryItem(BaseModel):
     unit_cost: float
     location: str
     last_updated: str
+    lead_time_days: Optional[int] = None
 
 class Order(BaseModel):
     id: str
@@ -80,6 +82,8 @@ class Order(BaseModel):
     actual_delivery: Optional[str] = None
     warehouse: Optional[str] = None
     category: Optional[str] = None
+    source: Optional[str] = None
+    lead_time_days: Optional[int] = None
 
 class DemandForecast(BaseModel):
     id: str
@@ -119,6 +123,30 @@ class CreatePurchaseOrderRequest(BaseModel):
     unit_cost: float
     expected_delivery_date: str
     notes: Optional[str] = None
+
+class RestockRecommendation(BaseModel):
+    sku: str
+    name: str
+    category: str
+    warehouse: str
+    trend: str
+    current_demand: int
+    forecasted_demand: int
+    unit_cost: float
+    lead_time_days: int
+    recommended_quantity: int
+    estimated_cost: float
+
+class RestockOrderLineItem(BaseModel):
+    sku: str
+    name: str
+    quantity: int
+    unit_cost: float
+
+class SubmitRestockOrderRequest(BaseModel):
+    items: List[RestockOrderLineItem]
+
+DEFAULT_LEAD_TIME_DAYS = 7
 
 # API endpoints
 @app.get("/")
@@ -178,6 +206,120 @@ def get_backlog():
         item_dict["has_purchase_order"] = has_po
         result.append(item_dict)
     return result
+
+@app.get("/api/restocking/recommendations", response_model=List[RestockRecommendation])
+def get_restock_recommendations(budget: float = 0):
+    """Recommend items to restock within a budget, prioritizing the biggest rising-demand gap first"""
+    inventory_by_sku = {item["sku"]: item for item in inventory_items}
+
+    candidates = []
+    for forecast in demand_forecasts:
+        inventory_item = inventory_by_sku.get(forecast["item_sku"])
+        if not inventory_item:
+            continue
+
+        gap = forecast["forecasted_demand"] - forecast["current_demand"]
+        if gap <= 0:
+            continue
+
+        candidates.append({
+            "sku": forecast["item_sku"],
+            "name": forecast["item_name"],
+            "category": inventory_item["category"],
+            "warehouse": inventory_item["warehouse"],
+            "trend": forecast["trend"],
+            "current_demand": forecast["current_demand"],
+            "forecasted_demand": forecast["forecasted_demand"],
+            "unit_cost": inventory_item["unit_cost"],
+            "lead_time_days": inventory_item.get("lead_time_days") or DEFAULT_LEAD_TIME_DAYS,
+            "gap": gap
+        })
+
+    # Rising demand first: biggest forecast-vs-current gap gets first claim on the budget
+    candidates.sort(key=lambda c: c["gap"], reverse=True)
+
+    recommendations = []
+    remaining_budget = budget
+    for candidate in candidates:
+        if remaining_budget <= 0:
+            break
+
+        desired_quantity = candidate["gap"]
+        desired_cost = desired_quantity * candidate["unit_cost"]
+
+        if desired_cost <= remaining_budget:
+            quantity = desired_quantity
+        else:
+            quantity = int(remaining_budget // candidate["unit_cost"])
+
+        if quantity <= 0:
+            continue
+
+        estimated_cost = round(quantity * candidate["unit_cost"], 2)
+        remaining_budget -= estimated_cost
+
+        recommendations.append({
+            "sku": candidate["sku"],
+            "name": candidate["name"],
+            "category": candidate["category"],
+            "warehouse": candidate["warehouse"],
+            "trend": candidate["trend"],
+            "current_demand": candidate["current_demand"],
+            "forecasted_demand": candidate["forecasted_demand"],
+            "unit_cost": candidate["unit_cost"],
+            "lead_time_days": candidate["lead_time_days"],
+            "recommended_quantity": quantity,
+            "estimated_cost": estimated_cost
+        })
+
+    return recommendations
+
+@app.post("/api/restocking/orders", response_model=Order)
+def submit_restock_order(request: SubmitRestockOrderRequest):
+    """Submit a restock order built from the recommendation list, adding it to the Orders list"""
+    if not request.items:
+        raise HTTPException(status_code=400, detail="At least one item is required to place a restock order")
+
+    inventory_by_sku = {item["sku"]: item for item in inventory_items}
+
+    order_items = []
+    total_value = 0.0
+    lead_time_days = DEFAULT_LEAD_TIME_DAYS
+    for line_item in request.items:
+        order_items.append({
+            "sku": line_item.sku,
+            "name": line_item.name,
+            "quantity": line_item.quantity,
+            "unit_price": line_item.unit_cost
+        })
+        total_value += line_item.quantity * line_item.unit_cost
+
+        inventory_item = inventory_by_sku.get(line_item.sku)
+        item_lead_time = (inventory_item.get("lead_time_days") if inventory_item else None) or DEFAULT_LEAD_TIME_DAYS
+        # The order isn't complete until its slowest item arrives
+        lead_time_days = max(lead_time_days, item_lead_time)
+
+    first_item = inventory_by_sku.get(request.items[0].sku)
+    order_date = datetime.now()
+    expected_delivery = order_date + timedelta(days=lead_time_days)
+
+    new_order = {
+        "id": str(len(orders) + 1),
+        "order_number": f"ORD-2025-{len(orders) + 1:04d}",
+        "customer": "Internal Restocking",
+        "items": order_items,
+        "status": "Processing",
+        "order_date": order_date.isoformat(),
+        "expected_delivery": expected_delivery.isoformat(),
+        "total_value": round(total_value, 2),
+        "warehouse": first_item["warehouse"] if first_item else None,
+        "category": first_item["category"] if first_item else None,
+        "source": "restock",
+        "lead_time_days": lead_time_days
+    }
+
+    orders.append(new_order)
+    return new_order
 
 @app.get("/api/dashboard/summary")
 def get_dashboard_summary(

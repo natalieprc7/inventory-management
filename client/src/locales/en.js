@@ -6,6 +6,7 @@ export default {
     orders: 'Orders',
     finance: 'Finance',
     demandForecast: 'Demand Forecast',
+    restocking: 'Restocking',
     companyName: 'Catalyst Components',
     subtitle: 'Inventory Management System'
   },
@@ -106,6 +107,7 @@ export default {
     title: 'Orders',
     description: 'View and manage customer orders',
     allOrders: 'All Orders',
+    submittedOrders: 'Submitted Orders',
     totalOrders: 'Total Orders',
     totalRevenue: 'Total Revenue',
     avgOrderValue: 'Avg Order Value',
@@ -125,7 +127,8 @@ export default {
       totalValue: 'Total Value',
       status: 'Status',
       expectedDelivery: 'Expected Delivery',
-      actualDelivery: 'Actual Delivery'
+      actualDelivery: 'Actual Delivery',
+      leadTime: 'Delivery Lead Time'
     }
   },
 
@@ -186,6 +189,31 @@ export default {
       trend: 'Trend',
       period: 'Period'
     }
+  },
+
+  // Restocking
+  restocking: {
+    title: 'Restocking',
+    description: 'Set a budget and get recommended items to restock based on demand forecasts',
+    budgetLabel: 'Available Budget',
+    recommendationsTitle: 'Recommended Items',
+    noRecommendations: 'No items to recommend at this budget. Try increasing it.',
+    table: {
+      include: 'Include',
+      sku: 'SKU',
+      itemName: 'Item Name',
+      category: 'Category',
+      warehouse: 'Warehouse',
+      trend: 'Trend',
+      unitCost: 'Unit Cost',
+      quantity: 'Quantity',
+      lineCost: 'Line Cost'
+    },
+    totalLabel: 'Selected Total',
+    overBudget: 'Selected total exceeds your budget',
+    placeOrder: 'Place Order',
+    orderSuccess: 'Order {orderNumber} placed successfully. Check the Orders tab to view it.',
+    orderError: 'Failed to place restock order'
   },
 
   // Filters
@@ -323,6 +351,7 @@ export default {
     search: 'Search',
     filter: 'Filter',
     export: 'Export',
-    items: 'items'
+    items: 'items',
+    days: 'days'
   }
 }
